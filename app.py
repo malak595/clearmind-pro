@@ -46,14 +46,8 @@ st.markdown("""
 st.title("🧠 ClearMind Pro")
 st.subheader("Advanced Predictive Platform for Academic Well-being & Stress Management")
 st.markdown("---")
-# 🔒 استدعاء وتكوين المفتاح المحدث الآمن لـ Gemini (يدعم AQ. و AIza)
-# تفعيل التثبيت التلقائي والمباشر للمكتبة برمجياً لمنع أخطاء السيرفر
-import os
-try:
-    import google.generativeai as genai
-except ModuleNotFoundError:
-    os.system("pip install google-generativeai")
-    import google.generativeai as genai
+import google.generativeai as genai
+
 
 
 API_KEY = None
