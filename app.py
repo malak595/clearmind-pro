@@ -46,6 +46,19 @@ st.markdown("""
 st.title("🧠 ClearMind Pro")
 st.subheader("Advanced Predictive Platform for Academic Well-being & Stress Management")
 st.markdown("---")
+# 🔒 استدعاء وتكوين المفتاح المحدث الآمن لـ Gemini (يدعم AQ. و AIza)
+import google.generativeai as genai
+
+API_KEY = None
+if "GEMINI_API_KEY" in st.secrets:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+
+if API_KEY:
+    try:
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash') 
+    except Exception as e:
+        st.error(f"خطأ في تكوين الذكاء الاصطناعي: {e}")
 
 # إدارة حالة البيانات للرسم البياني (Mood & Burnout Tracker)
 if "history_df" not in st.session_state:
