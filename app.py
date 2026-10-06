@@ -50,16 +50,6 @@ import google.generativeai as genai
 
 
 
-API_KEY = None
-if "GEMINI_API_KEY" in st.secrets:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-
-if API_KEY:
-    try:
-        genai.configure(api_key=API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash') 
-    except Exception as e:
-        st.error(f"خطأ في تكوين الذكاء الاصطناعي: {e}")
 
 # إدارة حالة البيانات للرسم البياني (Mood & Burnout Tracker)
 if "history_df" not in st.session_state:
@@ -69,8 +59,22 @@ if "history_df" not in st.session_state:
         "مؤشر الإجهاد": [45, 55, 40, 60, 50]
     })
 
-# إدارة حالة المذكرات الخاصة (Private Journal)
+# 📓 إدارة حالة المذكرات الخاصة (Private Journal)
 if "journal_entries" not in st.session_state:
+    st.session_state.journal_entries = []
+
+# 🔒 إدخال المفتاح المحدث من الواجهة بدون مشاكل Secrets
+import google.generativeai as genai
+
+API_KEY = st.sidebar.text_input("🔑 أدخلي مفتاح الـ Gemini API لتفعيل الشات بوت:", type="password")
+
+if API_KEY:
+    try:
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash') 
+    except Exception as e:
+        st.error(f"خطأ في تكوين الذكاء الاصطناعي: {e}")
+
     st.session_state.journal_entries = []
 
 # شريط جانبي (Sidebar) للموسيقى والتمارين
