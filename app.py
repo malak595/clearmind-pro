@@ -9,11 +9,7 @@ st.set_page_config(page_title="ClearMind Pro", page_icon="🧠", layout="wide")
 
 st.markdown("""
     <style>
-    /* تغيير خلفية التطبيق بالكامل */
-    .stApp {
-        background-color: #f4f7f6;
-    }
-    /* تحسين شكل البطاقات والإطارات */
+    .stApp { background-color: #f4f7f6; }
     div[data-testid="stVerticalBlock"] {
         background-color: #ffffff;
         padding: 20px;
@@ -21,43 +17,20 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.02);
         margin-bottom: 20px;
     }
-    /* تخصيص العناوين */
-    h1, h2, h3 {
-        color: #2c4a3e; /* أخضر داكن مهدئ */
-        font-family: 'Segoe UI', sans-serif;
-        font-weight: 600;
-    }
-    /* تخصيص الأزرار لتكون جذابة ودائرية */
-    .stButton>button {
-        background-color: #6b8e23; /* ألوان الباستيل الأخضر */
-        color: white;
-        border-radius: 20px;
-        border: none;
-        padding: 8px 20px;
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background-color: #556b2f;
-        transform: translateY(-1px);
-    }
+    h1, h2, h3 { color: #2c4a3e; font-family: 'Segoe UI', sans-serif; font-weight: 600; }
+    .stButton>button { background-color: #6b8e23; color: white; border-radius: 20px; border: none; padding: 8px 20px; }
+    .stButton>button:hover { background-color: #556b2f; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🧠 ClearMind Pro")
 st.subheader("Advanced Predictive Platform for Academic Well-being & Stress Management")
 st.markdown("---")
-import google.generativeai as genai
-
-
-
 
 # إدارة حالة البيانات للرسم البياني (Mood & Burnout Tracker)
 if "history_df" not in st.session_state:
     dates = [datetime.date.today() - datetime.timedelta(days=i) for i in range(4, -1, -1)]
-    st.session_state.history_df = pd.DataFrame({
-        "التاريخ": dates,
-        "مؤشر الإجهاد": [45, 55, 40, 60, 50]
-    })
+    st.session_state.history_df = pd.DataFrame({"التاريخ": dates, "مؤشر الإجهاد": [45, 55, 40, 60, 50]})
 
 # 📓 إدارة حالة المذكرات الخاصة (Private Journal)
 if "journal_entries" not in st.session_state:
@@ -74,8 +47,6 @@ if API_KEY:
         model = genai.GenerativeModel('gemini-1.5-flash') 
     except Exception as e:
         st.error(f"خطأ في تكوين الذكاء الاصطناعي: {e}")
-
-    st.session_state.journal_entries = []
 
 # شريط جانبي (Sidebar) للموسيقى والتمارين
 with st.sidebar:
@@ -111,9 +82,8 @@ with st.sidebar:
         distraction_text = st.text_area("ما الذي يشغل عقلكِ الآن؟", key="distract")
         if st.button("🗑️ نسف الأفكار وتصفية الذهن"):
             st.balloons()
-            st.success("تم مسح الأفكار بنجاح! عقلكِ الآن أكثر صفاءً.")
+            st.success("تم مسح الأفكار بنجاح!")
 
-# الواجهة الرئيسية: تقسيم المساحة بين التحليلات والشات بوت والمذكرات
 col1, col2 = st.columns(2)
 
 with col1:
@@ -133,9 +103,9 @@ with col1:
     st.metric(label="مؤشر خطر الاحتراق الأكاديمي الحالي", value=f"{normalized_risk}%")
     
     if normalized_risk > 70:
-        st.error("⚠️ تنبيه مرتفع: مستويات الإجهاد والقلق تتطلب استراحة فورية وتنظيم الوجبات والنوم لحماية صحتكِ.")
+        st.error("⚠️ تنبيه مرتفع: مستويات الإجهاد والقلق تتطلب استراحة فورية.")
     elif normalized_risk > 40:
-        st.warning("⚠️ تنبيه متوسط: يرجى زيادة ساعات الراحة وتقليل الضغط الدراسي لتفادي الاحتراق الأكاديمي.")
+        st.warning("⚠️ تنبيه متوسط: يرجى زيادة ساعات الراحة وتقليل الضغط الدراسي.")
     else:
         st.success("✅ وضعكِ الأكاديمي والنفسي متزن وممتاز حالياً!")
         
@@ -148,25 +118,23 @@ with col1:
             st.session_state.history_df = pd.concat([st.session_state.history_df, new_row], ignore_index=True)
         st.success("تم تحديث مخطط الإحصائيات بنجاح!")
 
-    st.markdown("### 📈 مسار الإجهاد الأسبوعي (Burnout Tracking)")
     chart_data = st.session_state.history_df.set_index("التاريخ")
     st.line_chart(chart_data)
 
     st.markdown("---")
     st.header("📓 Private Journal")
-    entry_title = st.text_input("عنوان تدوينة اليوم (مثال: شعور قبل الامتحان):")
+    entry_title = st.text_input("عنوان تدوينة اليوم:")
     entry_content = st.text_area("اكتبي تفاصيل ما يدور في ذهنكِ هنا...")
     
     if st.button("🔒 حفظ التدوينة بأمان"):
         if entry_content:
             now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
             st.session_state.journal_entries.append({"time": now_time, "title": entry_title, "content": entry_content})
-            st.success("تم حفظ تدوينتكِ الخاصة بنجاح وأمان تام!")
+            st.success("تم الحفظ بأمان تام!")
             
     if st.session_state.journal_entries:
-        for idx, entry in enumerate(reversed(st.session_state.journal_entries)):
-            with st.expander(f"📅 {entry['time']} - {entry['title']}"):
-                st.write(entry['content'])
+        for entry in reversed(st.session_state.journal_entries):
+            with st.expander(f"📅 {entry['time']} - {entry['title']}"): st.write(entry['content'])
 
 with col2:
     st.header("💬 Context-Aware AI Support")
@@ -182,9 +150,18 @@ with col2:
         
         out_of_scope_keywords = ["برمجة", "كود", "سياسة", "اقتصاد", "رياضيات", "فيزياء", "تاريخ", "كورة", "لعبة"]
         if any(keyword in prompt.lower() for keyword in out_of_scope_keywords):
-            response = "أنا هنا كمساعد ذكي مرن ومخصص لدعم الصحة النفسية والرفاهية الأكاديمية فقط. أنا غير متخصص في هذا المجال الخارجي، لكن يمكنني مساعدتكِ في إعداد خطة دراسية لتقليل التوتر الناتج عن هذه المواد إذا أردتِ!"
+            response = "أنا هنا كمساعد ذكي مرن ومخصص لدعم الصحة النفسية والرفاهية الأكاديمية فقط. أنا غير متخصص في هذا المجال الخارجي."
         else:
-            response = "أشعر بكِ تماماً. بناءً على معايير ClearMind Pro لإدارة التوتر الأكاديمي، أنصحكِ باستخدام مشغل الصوت في القائمة الجانبية للاستماع إلى ألحان المطر الهادئة، ثم تجربة تمين التنفس المربع لمدة دقيقتين فقط لإعادة شحن طاقتكِ الذهنية."
+            if API_KEY:
+                try:
+                    system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. مهمتك تقديم نصائح علمية ونفسية عملية ومختصرة جداً لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة. أجب دائماً بلغة عربية ودودة وداعمة."
+                    full_prompt = f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
+                    response_ai = model.generate_content(full_prompt)
+                    response = response_ai.text
+                except Exception as e:
+                    response = "عذراً، حدثت مشكلة أثناء الاتصال بالخادم."
+            else:
+                response = "أشعر بكِ تماماً. (ملاحظة: الشات بوت يعمل حالياً في الوضع التجريبي، يرجى تفعيل الـ API Key في القائمة الجانبية ليجيبكِ الذكاء الاصطناعي بدقة)."
             
         with st.chat_message("assistant"): st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
