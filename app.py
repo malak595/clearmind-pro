@@ -160,7 +160,7 @@ with tab1:
         study_hours = st.slider(text["study_label"], 0, 24, 6)
     with col2:
         leisure_time = st.slider(text["leisure_label"], 0, 24, 2)
-        stress_level = st.slider(text["stress_level"], 1, 10, 5)
+        stress_level = st.slider(text["stress_label"], 1, 10, 5)
         
     if st.button(text["calc_btn"]):
         burnout_score = (stress_level * 10) + (study_hours * 5) - (sleep_hours * 3) - (leisure_time * 4)
