@@ -155,17 +155,29 @@ with col2:
         out_of_scope_keywords = ["برمجة", "كود", "سياسة", "اقتصاد", "رياضيات", "فيزياء", "تاريخ", "كورة", "لعبة"]
         if any(keyword in prompt.lower() for keyword in out_of_scope_keywords):
             response = "أنا هنا كمساعد ذكي مرن ومخصص لدعم الصحة النفسية والرفاهية الأكاديمية فقط. أنا غير متخصص في هذا المجال الخارجي، لكن يمكنني مساعدتكِ في إعداد خطة دراسية لتقليل التوتر الناتج عن هذه المواد إذا أردتِ!"
-        else:
+              else:
             if API_KEY:
                 try:
-                    system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. مهمتك تقديم نصائح علمية ونفسية عملية ومختصرة جداً لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة. أجب دائماً بلغة عربية ودودة وداعمة."
-                    response_ai = model.generate_content(contents=f"{system_instruction}\n\nالمستخدم يقول: {prompt}")
-                    response = response_ai.text
+                    # إعداد التعليمات البرمجية للمساعد الذكي وتوجيهه
+                    system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. أجب دائماً بلغة عربية ودودة وداعمة لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة."
+                    
+                    # استدعاء الموديل وتمرير النص بشكل سليم وآمن
+                    response_ai = model.generate_content(
+                        contents=f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
+                    )
+                    
+                    # التأكد من جلب النص البرمجي بشكل صحيح ودعم الأخطاء المباشرة
+                    if response_ai.text:
+                        response = response_ai.text
+                    else:
+                        response = "لم أتمكن من معالجة النص، يرجى المحاولة مرة أخرى."
+                        
                 except Exception as e:
-                    response = "عذراً، حدثت مشكلة أثناء الاتصال بالخادم."
+                    # إظهار الخطأ الحقيقي لمساعدتك في معالجة أي توقف بدلاً من الرسالة الثابتة المبهمة
+                    response = f"عذراً، حدثت مشكلة أثناء الاتصال بالخادم. تفاصيل الخطأ: {e}"
             else:
-                response = "أشعر بكِ تماماً. (ملاحظة: الشات بوت يعمل حالياً في الوضع التجريبي، يرجى تفعيل الـ API Key في القائمة الجانبية ليجيبكِ الذكاء الاصطناعي بدقة)."
-            
-        with st.chat_message("assistant"): 
+                response = "⚠️ (في القائمة الجانبية أدخلي الذكاء الاصطناعي بدقة API Key ملاحظة: الشات بوت يعمل حالياً في الوضع التجريبي، يرجى تفعيل الـ) تشعر بك تماماً"
+
+        with st.chat_message("assistant"):
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
