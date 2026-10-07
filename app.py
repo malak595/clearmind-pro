@@ -1,206 +1,142 @@
 import streamlit as st
-import numpy as np
-import pandas as pd
-import datetime
-import time
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
 
-# 1. إعدادات الصفحة والتصميم الهادئ والمريح (Sage Green Theme)
+# إعدادات الصفحة الأساسية للتطبيق
 st.set_page_config(page_title="ClearMind Pro", page_icon="🧠", layout="wide")
 
+# تحميل المتغيرات البيئية لضمان الأمان
+load_dotenv()
+
+# تحسين واجهة التطبيق باستخدام CSS مخصص
 st.markdown("""
     <style>
-    .stApp { background-color: #f4f7f6; }
-    div[data-testid="stVerticalBlock"] {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        margin-bottom: 20px;
-    }
-    h1, h2, h3 { color: #2c4a3e; font-family: 'Segoe UI', sans-serif; font-weight: 600; }
-    .stButton>button { background-color: #6b8e23; color: white; border-radius: 20px; border: none; padding: 8px 20px; }
-    .stButton>button:hover { background-color: #556b2f; }
+    .main { background-color: #f5f7fb; }
+    .stButton>button { width: 100%; border-radius: 20px; background-color: #4A90E2; color: white; }
+    .stTextInput>div>div>input { border-radius: 15px; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-st.title("🧠 ClearMind Pro")
-st.subheader("Advanced Predictive Platform for Academic Well-being & Stress Management")
-st.markdown("---")
+# ----------------- إعدادات تعدد اللغات (Localization) -----------------
+# 1. تحديد اللغات المتوفرة في القائمة الجانبية أولاً
+st.sidebar.header("🌐 Language / اللغة / Langue")
+lang_choice = st.sidebar.selectbox("Choose Language:", ["العربية", "English", "Français"])
 
-# إدارة حالة البيانات للرسم البياني (Mood & Burnout Tracker)
-if "history_df" not in st.session_state:
-    dates = [datetime.date.today() - datetime.timedelta(days=i) for i in range(4, -1, -1)]
-    st.session_state.history_df = pd.DataFrame({"التاريخ": dates, "مؤشر الإجهاد": [45, 55, 40, 60, 50]})
+# 2. قاموس النصوص لترجمة كامل الواجهة تلقائياً
+translations = {
+    "العربية": {
+        "title": "🧠 ClearMind Pro - منصتك للصحة النفسية والرفاهية الأكاديمية",
+        "subtitle": "نحن هنا لمساعدتك في إدارة التوتر الأكاديمي، تنظيم وقتك، وتحقيق التوازن الصحي.",
+        "sidebar_control": "📁 لوحة التحكم والإعدادات",
+        "api_label": "لتفعيل الشات بوت Gemini API أدخلي مفتاح الـ",
+        "music_header": "🎵 خلفيات صوتية هادئة",
+        "music_select": "اختر الخلفية الصوتية المفضلة لديك:",
+        "music_options": ["أصوات المطر الهادئة", "صوت البحر الأمواج", "موسيقى تصفية الذهن Lo-Fi"],
+        "exercise_header": "🧘 تمارين الاسترخاء والراحة",
+        "exercise_select": "اختر تمرين الاسترخاء اليومي:",
+        "exercise_options": ["تمرين التنفس المربع (Box Breathing)", "تمرين التخلص من تفريغ الأفكار (Mind Dump)"],
+        "exercise_btn": "ابدأ التمرين الآن",
+        "exercise_success": "رائع! خذ شهيقاً عميقاً وابدأ في تطبيق: ",
+        "tabs": ["📊 مقياس الاحتراق الأكاديمي", "💬 المحادثة الذكية المدعومة"],
+        "burnout_title": "📊 مقياس وحاسبة الاحتراق الأكاديمي والتوتر",
+        "burnout_subtitle": "أجيبي عن الأسئلة التالية بدقة لتقييم مستوى التوتر الحالي لديكِ والحصول على نصائح مخصصة:",
+        "sleep_label": "ساعات النوم اليومية:",
+        "study_label": "ساعات الدراسة اليومية المتواصلة:",
+        "leisure_label": "وقت الفراغ والراحة بالساعات:",
+        "stress_label": "مستوى الضغط الدراسي المتوقع (من 1 إلى 10):",
+        "calc_btn": "احسب مستوى الاحتراق الأكاديمي",
+        "burnout_res": "نسبة التوتر والاحتراق الأكاديمي المتوقعة: ",
+        "status_low": "وضعك ممتاز! أنت تديرين وقتك وضغوطك بشكل صحي جداً. استمري في هذا التوازن.",
+        "status_med": "تحذير متوسط: هناك بعض المؤشرات على بداية الإرهاق. يُنصح بزيادة فترات الراحة وتنظيم ساعات النوم.",
+        "status_high": "تنبيه مرتفع: أنت تعانين من إرهاق أكاديمي شديد! من الضروري التوقف قليلاً، ممارسة تمارين الاسترخاء، وإعادة ترتيب أولوياتك لحماية صحتك النفسية.",
+        "chat_title": "💬 المساعد النفسي والأكاديمي الذكي",
+        "chat_subtitle": "أنا هنا للاستماع إليك ومساعدتك في التغلب على صعوبات الدراسة وتنظيم وقتك. تحدث معي بحرية.",
+        "chat_input_placeholder": "اكتبي رسالتكِ هنا...",
+        "out_of_scope": "عذراً، أنا متخصص فقط في مجال الصحة النفسية، الرفاهية الأكاديمية، وتنظيم وقت الدراسة للطلاب لمساعدتهم على تقليل التوتر والضغط.",
+        "api_warning": "⚠️ ملاحظة: الشات بوت يعمل حالياً في الوضع التجريبي. يرجى إدخال مفتاح الـ API Key في القائمة الجانبية لتفعيله فوراً.",
+        "api_error": "لم أتمكن من معالجة النص حالياً، يرجى المحاولة مرة أخرى.",
+        "server_error": "عذراً، حدثت مشكلة أثناء الاتصال بالخادم. تفاصيل الخطأ: ",
+        "system_instruction": "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. أجب دائماً وبشكل كامل باللغة العربية الودودة والداعمة لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة والاهتمام بالصحة النفسية والرفاهية."
+    },
+    "English": {
+        "title": "🧠 ClearMind Pro - Academic Well-being Platform",
+        "subtitle": "We are here to help you manage academic stress, organize study time, and achieve a healthy balance.",
+        "sidebar_control": "📁 Control Panel & Settings",
+        "api_label": "Enter Gemini API Key to activate chatbot:",
+        "music_header": "🎵 Calm Soundscapes",
+        "music_select": "Choose your preferred background sound:",
+        "music_options": ["Calm Rain Sounds", "Ocean Waves", "Lo-Fi Mind Clearing Music"],
+        "exercise_header": "🧘 Relaxation Exercises",
+        "exercise_select": "Choose a daily relaxation exercise:",
+        "exercise_options": ["Box Breathing Exercise", "Mind Dump Exercise"],
+        "exercise_btn": "Start Exercise Now",
+        "exercise_success": "Great! Take a deep breath and start: ",
+        "tabs": ["📊 Burnout Predictor", "💬 AI Support Chat"],
+        "burnout_title": "📊 Academic Burnout & Stress Predictor",
+        "burnout_subtitle": "Answer the following questions accurately to evaluate your current stress level and receive personalized tips:",
+        "sleep_label": "Daily Sleep Hours:",
+        "study_label": "Daily Continuous Study Hours:",
+        "leisure_label": "Leisure & Free Time (Hours):",
+        "stress_label": "Expected Study Stress Level (1 to 10):",
+        "calc_btn": "Calculate Burnout Score",
+        "burnout_res": "Expected Academic Burnout Score: ",
+        "status_low": "Excellent status! You manage your time and stress very healthily. Keep up the balance.",
+        "status_med": "Moderate warning: There are some indicators of early burnout. Increasing rest periods and regulating sleep is advised.",
+        "status_high": "High alert: You are suffering from severe academic exhaustion! It is essential to pause, practice relaxation, and reset priorities.",
+        "chat_title": "💬 AI Psychological & Academic Assistant",
+        "chat_subtitle": "I am here to listen to you and help you overcome study difficulties and organize time. Talk to me freely.",
+        "chat_input_placeholder": "Type your message here...",
+        "out_of_scope": "Sorry, I specialize only in mental health, academic well-being, and study time management for students.",
+        "api_warning": "⚠️ Note: The chatbot is currently in demo mode. Please enter an API Key in the sidebar to activate it.",
+        "api_error": "Could not process text right now, please try again.",
+        "server_error": "Sorry, a server connection error occurred. Details: ",
+        "system_instruction": "You are an advanced AI assistant for ClearMind Pro. Always reply entirely in supportive, empathetic, and professional English to help students manage academic stress, organize study schedules, and maintain mental well-being."
+    },
+    "Français": {
+        "title": "🧠 ClearMind Pro - Plateforme de Bien-être Académique",
+        "subtitle": "Nous sommes là pour vous aider à gérer le stress académique, organiser votre temps et équilibrer votre vie.",
+        "sidebar_control": "📁 Panneau de configuration",
+        "api_label": "Entrez la clé API Gemini pour activer le chatbot :",
+        "music_header": "🎵 Ambiances Sonores Calmes",
+        "music_select": "Choisissez votre fond sonore préféré :",
+        "music_options": ["Sons de Pluie Calme", "Vagues de l'Océan", "Musique Lo-Fi pour vider l'esprit"],
+        "exercise_header": "🧘 Exercices de Relaxation",
+        "exercise_select": "Choisissez un exercice de relaxation quotidien :",
+        "exercise_options": ["Exercice de Respiration Carrée (Box Breathing)", "Exercice de Vidage d'Esprit (Mind Dump)"],
+        "exercise_btn": "Commencer l'exercice",
+        "exercise_success": "Super ! Prenez une grande inspiration et commencez : ",
+        "tabs": ["📊 Indicateur de Burnout", "💬 Chat de Support IA"],
+        "burnout_title": "📊 Simulateur de Burnout Académique & Stress",
+        "burnout_subtitle": "Répondez précisément aux questions pour évaluer votre niveau de stress et obtenir des conseils personnalisés :",
+        "sleep_label": "Heures de sommeil quotidiennes :",
+        "study_label": "Heures d'étude continue par jour :",
+        "leisure_label": "Temps libre et loisirs (Heures) :",
+        "stress_label": "Niveau de stress académique attendu (1 à 10) :",
+        "calc_btn": "Calculer le score de Burnout",
+        "burnout_res": "Score de Burnout Académique estimé : ",
+        "status_low": "Excellent état ! Vous gérez votre temps et votre stress de manière très saine. Continuez ainsi.",
+        "status_med": "Avertissement modéré : Il y a des signes de début d'épuisement. Il est conseillé d'augmenter le repos et de régler le sommeil.",
+        "status_high": "Alerte élevée : Vous souffrez d'un épuisement académique sévère ! Il est essentiel de faire une pause et de revoir vos priorités.",
+        "chat_title": "💬 Assistant IA Psychologique & Académique",
+        "chat_subtitle": "Je suis là pour vous écouter, vous aider à surmonter les difficultés d'études et organiser votre temps. Parlez-moi librement.",
+        "chat_input_placeholder": "Écrivez votre message ici...",
+        "out_of_scope": "Désolé, je me spécialise uniquement dans la santé mentale, le bien-être académique et la gestion du temps pour les étudiants.",
+        "api_warning": "⚠️ Note : Le chatbot est en mode démo. Veuillez saisir une clé API dans la barre latérale pour l'activer.",
+        "api_error": "Impossible de traiter le texte pour le moment, veuillez réessayer.",
+        "server_error": "Désolé, une erreur de connexion au serveur est survenue. Détails : ",
+        "system_instruction": "Vous êtes un assistant IA avancé pour ClearMind Pro. Répondez toujours entièrement en français, de manière bienveillante, encourageante et empathique pour aider les étudiants à gérér le stress, planifier les études et prendre soin de leur santé mentale."
+    }
+}
 
-# 📓 إدارة حالة المذكرات الخاصة (Private Journal)
-if "journal_entries" not in st.session_state:
-    st.session_state.journal_entries = []
+# جلب نصوص اللغة المختارة حالياً
+text = translations[lang_choice]
 
-# 🔒 إدخال المفتاح المحدث من الواجهة بدون مشاكل Secrets
-import google.generativeai as genai
+# تطبيق العناوين المترجمة على الواجهة مباشرة
+st.title(text["title"])
+st.write(text["subtitle"])
 
-API_KEY = st.sidebar.text_input("🔑 أدخلي مفتاح الـ Gemini API لتفعيل الشات بوت:", type="password")
+# ----------------- محتويات القائمة الجانبية المترجمة -----------------
+st.sidebar.markdown("---")
+st.sidebar.subheader(text["sidebar_control"])
 
-        else:
-            if API_KEY:
-                try:
-                    system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. أجب دائماً بلغة عربية ودودة وداعمة لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة."
-
-                    # تهيئة المكتبة والموديل مباشرة هنا
-                    import google.generativeai as genai
-                    genai.configure(api_key=API_KEY)
-                    local_model = genai.GenerativeModel('gemini-3.8-flash')
-
-                    response_ai = local_model.generate_content(
-                        f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
-                    )
-
-                    if response_ai.text:
-                        response = response_ai.text
-                    else:
-                        response = "لم أتمكن من معالجة النص، يرجى المحاولة مرة أخرى."
-                except Exception as e:
-                    response = f"عذراً، حدثت مشكلة أثناء الاتصال بالخادم. تفاصيل الخطأ: {e}"
-            else:
-                response = "⚠️ يرجى إدخال مفتاح الـ API في القائمة الجانبية لتفعيل المحادثة."
-
-
-# شريط جانبي (Sidebar) للموسيقى والتمارين
-with st.sidebar:
-    st.header("🎵 Calm Soundscapes")
-    track_choice = st.selectbox("اختر الخلفية الصوتية:", ["صوت المطر الهادئ", "موجات التأمل والدراسة", "موسيقى البيانو لتقليل القلق"])
-    if track_choice == "صوت المطر الهادئ":
-        st.audio("https://soundhelix.com")
-    elif track_choice == "موجات التأمل والدراسة":
-        st.audio("https://soundhelix.com")
-    else:
-        st.audio("https://soundhelix.com")
-        
-    st.markdown("---")
-    st.header("🧘 Relaxation Exercises")
-    exercise = st.radio("اختر تمرين الاسترخاء السريع:", ["تمرين التنفس المربع (Box Breathing)", "تفريغ الأفكار السلبي (Mind Dump)"])
-    
-    if exercise == "تمرين التنفس المربع (Box Breathing)":
-        st.info("شهيق لـ 4 ثوانٍ ➡️ اكتم النفس لـ 4 ثوانٍ ➡️ زفير لـ 4 ثوانٍ ➡️ اكتم النفس لـ 4 ثوانٍ.")
-        if st.button("ابدأ التوجيه البصري"):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            status_text.text("🌬️ شهيق عميق...")
-            for i in range(25): time.sleep(0.04); progress_bar.progress(i)
-            status_text.text("🛑 اكتم النفس واسترخِ...")
-            for i in range(25, 50): time.sleep(0.04); progress_bar.progress(i)
-            status_text.text("😮 زفير بطيء للتوتر...")
-            for i in range(50, 75): time.sleep(0.04); progress_bar.progress(i)
-            status_text.text("🛑 اكتم النفس...")
-            for i in range(75, 101): time.sleep(0.04); progress_bar.progress(i)
-            status_text.text("✅ أحسنتِ! كرري التمرين إذا شعرتِ بضغط إضافي.")
-            
-    elif exercise == "تفريغ الأفكار السلبي (Mind Dump)":
-        distraction_text = st.text_area("ما الذي يشغل عقلكِ الآن؟", key="distract")
-        if st.button("🗑️ نسف الأفكار وتصفية الذهن"):
-            st.balloons()
-            st.success("تم مسح الأفكار بنجاح!")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.header("📊 Academic Burnout Predictor")
-    academic_pressure = st.slider("مستوى الضغط الأكاديمي الحالي (1-10)", 1, 10, 5)
-    anxiety_level = st.slider("مستوى القلق العام (1-10)", 1, 10, 4)
-    study_hours = st.slider("ساعات الدراسة اليومية", 1, 16, 6)
-    sleep_hours = st.slider("ساعات النوم (Sleep Hours)", 3, 12, 7)
-    free_time = st.slider("وقت الفراغ والراحة بالساعات", 0, 8, 2)
-    meals_count = st.slider("عدد الوجبات المتناولة اليوم", 0, 5, 3)
-    
-    positive_factors = (sleep_hours * 0.3) + (free_time * 0.4) + (meals_count * 0.5)
-    negative_factors = (academic_pressure * 0.8) + (anxiety_level * 0.9) + (study_hours * 0.3)
-    raw_risk = (negative_factors - positive_factors) + 20
-    normalized_risk = min(max(int((raw_risk / 25) * 100), 0), 100)
-    
-    st.metric(label="مؤشر خطر الاحتراق الأكاديمي الحالي", value=f"{normalized_risk}%")
-    
-    if normalized_risk > 70:
-        st.error("⚠️ تنبيه مرتفع: مستويات الإجهاد والقلق تتطلب استراحة فورية.")
-    elif normalized_risk > 40:
-        st.warning("⚠️ تنبيه متوسط: يرجى زيادة ساعات الراحة وتقليل الضغط الدراسي.")
-    else:
-        st.success("✅ وضعكِ الأكاديمي والنفسي متزن وممتاز حالياً!")
-        
-    if st.button("💾 حفظ قراءة اليوم في الإحصائيات"):
-        today = datetime.date.today()
-        if today in st.session_state.history_df["التاريخ"].values:
-            st.session_state.history_df.loc[st.session_state.history_df["التاريخ"] == today, "مؤشر الإجهاد"] = normalized_risk
-        else:
-            new_row = pd.DataFrame({"التاريخ": [today], "مؤشر الإجهاد": [normalized_risk]})
-            st.session_state.history_df = pd.concat([st.session_state.history_df, new_row], ignore_index=True)
-        st.success("تم تحديث مخطط الإحصائيات بنجاح!")
-
-    chart_data = st.session_state.history_df.set_index("التاريخ")
-    st.line_chart(chart_data)
-
-    st.markdown("---")
-    st.markdown("---")
-    st.header("📓 Private Journal")
-    entry_title = st.text_input("عنوان تدوينة اليوم:")
-    entry_content = st.text_area("اكتبي تفاصيل ما يدور في ذهنكِ هنا...")
-    
-    if st.button("🔒 حفظ التدوينة بأمان"):
-        if entry_content:
-            now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-            st.session_state.journal_entries.append({"time": now_time, "title": entry_title, "content": entry_content})
-            st.success("تم الحفظ بأمان تام!")
-            
-    if st.session_state.journal_entries:
-        for entry in reversed(st.session_state.journal_entries):
-            with st.expander(f"📅 {entry['time']} - {entry['title']}"): 
-                st.write(entry['content'])
-
-with col2:
-    st.header("💬 Context-Aware AI Support")
-    if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "assistant", "content": "مرحباً بكِ في ClearMind Pro. كيف تشعرين اليوم؟"}]
-
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]): 
-            st.markdown(message["content"])
-
-    if prompt := st.chat_input("اكتبي رسالتكِ هنا..."):
-        with st.chat_message("user"): 
-            st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        out_of_scope_keywords = ["برمجة", "كود", "سياسة", "اقتصاد", "رياضيات", "فيزياء", "تاريخ", "كورة", "لعبة"]
-        if any(keyword in prompt.lower() for keyword in out_of_scope_keywords):
-            response = "أنا هنا كمساعد ذكي مرن ومخصص لدعم الصحة النفسية والرفاهية الأكاديمية فقط. أنا غير متخصص في هذا المجال الخارجي، لكن يمكنني مساعدتكِ في إعداد خطة دراسية لتقليل التوتر الناتج عن هذه المواد إذا أردتِ!"
-        else:
-            if API_KEY:
-                try:
-                    # إعداد التعليمات البرمجية للمساعد الذكي وتوجيهه
-                    system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. أجب دائماً بلغة عربية ودودة وداعمة لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة."
-                    
-                    # استدعاء الموديل وتمرير النص بشكل سليم وآمن
-                                        # 1. إعادة التأكد من ضبط الإعدادات بالمفتاح النشط فوراً
-                    genai.configure(api_key=API_KEY)
-                    local_model = genai.GenerativeModel('gemini-3.8-flash')
-                    
-                    # 2. إرسال الطلب للموديل المحلي الجديد
-                    response_ai = local_model.generate_content(
-                        f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
-                    )
-
-                    
-                    # التأكد من جلب النص البرمجي بشكل صحيح ودعم الأخطاء المباشرة
-                    if response_ai.text:
-                        response = response_ai.text
-                    else:
-                        response = "لم أتمكن من معالجة النص، يرجى المحاولة مرة أخرى."
-                        
-                except Exception as e:
-                    # إظهار الخطأ الحقيقي لمساعدتك في معالجة أي توقف بدلاً من الرسالة الثابتة المبهمة
-                    response = f"عذراً، حدثت مشكلة أثناء الاتصال بالخادم. تفاصيل الخطأ: {e}"
-            else:
-                response = "⚠️ (في القائمة الجانبية أدخلي الذكاء الاصطناعي بدقة API Key ملاحظة: الشات بوت يعمل حالياً في الوضع التجريبي، يرجى تفعيل الـ) تشعر بك تماماً"
-
-        with st.chat_message("assistant"):
-            st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
