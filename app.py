@@ -44,7 +44,7 @@ API_KEY = st.sidebar.text_input("🔑 أدخلي مفتاح الـ Gemini API ل
 if API_KEY:
     try:
         genai.configure(api_key=API_KEY)
-        model = genai.GenerativeModel('gemini-2.5-flash') 
+        model = genai.GenerativeModel('gemini-3.8-flash') 
     except Exception as e:
         st.error(f"خطأ في تكوين الذكاء الاصطناعي: {e}")
 
