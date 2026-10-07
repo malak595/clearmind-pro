@@ -122,6 +122,7 @@ with col1:
     st.line_chart(chart_data)
 
     st.markdown("---")
+    st.markdown("---")
     st.header("📓 Private Journal")
     entry_title = st.text_input("عنوان تدوينة اليوم:")
     entry_content = st.text_area("اكتبي تفاصيل ما يدور في ذهنكِ هنا...")
@@ -134,7 +135,8 @@ with col1:
             
     if st.session_state.journal_entries:
         for entry in reversed(st.session_state.journal_entries):
-            with st.expander(f"📅 {entry['time']} - {entry['title']}"): st.write(entry['content'])
+            with st.expander(f"📅 {entry['time']} - {entry['title']}"): 
+                st.write(entry['content'])
 
 with col2:
     st.header("💬 Context-Aware AI Support")
@@ -142,26 +144,28 @@ with col2:
         st.session_state.messages = [{"role": "assistant", "content": "مرحباً بكِ في ClearMind Pro. كيف تشعرين اليوم؟"}]
 
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]): st.markdown(message["content"])
+        with st.chat_message(message["role"]): 
+            st.markdown(message["content"])
 
     if prompt := st.chat_input("اكتبي رسالتكِ هنا..."):
-        with st.chat_message("user"): st.markdown(prompt)
+        with st.chat_message("user"): 
+            st.markdown(prompt)
         st.session_state.messages.append({"role": "user", "content": prompt})
         
         out_of_scope_keywords = ["برمجة", "كود", "سياسة", "اقتصاد", "رياضيات", "فيزياء", "تاريخ", "كورة", "لعبة"]
         if any(keyword in prompt.lower() for keyword in out_of_scope_keywords):
-            response = "أنا هنا كمساعد ذكي مرن ومخصص لدعم الصحة النفسية والرفاهية الأكاديمية فقط. أنا غير متخصص في هذا المجال الخارجي."
+            response = "أنا هنا كمساعد ذكي مرن ومخصص لدعم الصحة النفسية والرفاهية الأكاديمية فقط. أنا غير متخصص في هذا المجال الخارجي، لكن يمكنني مساعدتكِ في إعداد خطة دراسية لتقليل التوتر الناتج عن هذه المواد إذا أردتِ!"
         else:
             if API_KEY:
                 try:
                     system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. مهمتك تقديم نصائح علمية ونفسية عملية ومختصرة جداً لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة. أجب دائماً بلغة عربية ودودة وداعمة."
-                    full_prompt = f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
-                    response_ai = model.generate_content(full_prompt)
+                    response_ai = model.generate_content(contents=f"{system_instruction}\n\nالمستخدم يقول: {prompt}")
                     response = response_ai.text
                 except Exception as e:
                     response = "عذراً، حدثت مشكلة أثناء الاتصال بالخادم."
             else:
                 response = "أشعر بكِ تماماً. (ملاحظة: الشات بوت يعمل حالياً في الوضع التجريبي، يرجى تفعيل الـ API Key في القائمة الجانبية ليجيبكِ الذكاء الاصطناعي بدقة)."
             
-        with st.chat_message("assistant"): st.markdown(response)
+        with st.chat_message("assistant"): 
+            st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
