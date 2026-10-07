@@ -134,12 +134,20 @@ text = translations[lang_choice]
 
 # تطبيق العناوين المترجمة على الواجهة مباشرة
 st.title(text["title"])
-st.write(text["subtitle"])
-
 # ----------------- محتويات القائمة الجانبية المترجمة -----------------
 st.sidebar.markdown("---")
 st.sidebar.subheader(text["sidebar_control"])
-# قسم التمارين في القائمة الجانبية
+
+# جلب مفتاح الـ API بأمان مع توحيد الاسم بأحرف كبيرة لمنع خطأ الـ NameError
+API_KEY = os.getenv("GEMINI_API_KEY") or st.sidebar.text_input(text["api_label"], type="password")
+
+# قسم الموسيقى
+st.sidebar.markdown("---")
+st.sidebar.subheader(text["music_header"])
+sound_choice = st.sidebar.selectbox(text["music_select"], text["music_options"])
+st.sidebar.audio("https://soundhelix.com")
+
+# قسم التمارين
 st.sidebar.markdown("---")
 st.sidebar.subheader(text["exercise_header"])
 exercise_type = st.sidebar.selectbox(text["exercise_select"], text["exercise_options"])
@@ -198,7 +206,6 @@ with tab2:
         else:
             if API_KEY:
                 try:
-                    # تمرير مفتاح الـ API والاتصال المباشر بالموديل الحديث والمستقر
                     genai.configure(api_key=API_KEY)
                     chat_model = genai.GenerativeModel('gemini-3.8-flash')
                     
@@ -218,4 +225,3 @@ with tab2:
         with st.chat_message("assistant"):
             st.markdown(response)
         st.session_state.messages.append({"role": "assistant", "content": response})
-
