@@ -162,9 +162,15 @@ with col2:
                     system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. أجب دائماً بلغة عربية ودودة وداعمة لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة."
                     
                     # استدعاء الموديل وتمرير النص بشكل سليم وآمن
-                    response_ai = model.generate_content(
-                        contents=f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
+                                        # 1. إعادة التأكد من ضبط الإعدادات بالمفتاح النشط فوراً
+                    genai.configure(api_key=API_KEY)
+                    local_model = genai.GenerativeModel('gemini-3.8-flash')
+                    
+                    # 2. إرسال الطلب للموديل المحلي الجديد
+                    response_ai = local_model.generate_content(
+                        f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
                     )
+
                     
                     # التأكد من جلب النص البرمجي بشكل صحيح ودعم الأخطاء المباشرة
                     if response_ai.text:
