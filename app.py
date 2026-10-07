@@ -41,12 +41,29 @@ import google.generativeai as genai
 
 API_KEY = st.sidebar.text_input("🔑 أدخلي مفتاح الـ Gemini API لتفعيل الشات بوت:", type="password")
 
-if API_KEY:
-    try:
-        genai.configure(api_key=API_KEY)
-        model = genai.GenerativeModel('gemini-3.8-flash') 
-    except Exception as e:
-        st.error(f"خطأ في تكوين الذكاء الاصطناعي: {e}")
+        else:
+            if API_KEY:
+                try:
+                    system_instruction = "أنت مساعد ذكي متقدم لتطبيق ClearMind Pro. أجب دائماً بلغة عربية ودودة وداعمة لمساعدة الطلاب على إدارة التوتر الأكاديمي وتنظيم وقت الدراسة."
+
+                    # تهيئة المكتبة والموديل مباشرة هنا
+                    import google.generativeai as genai
+                    genai.configure(api_key=API_KEY)
+                    local_model = genai.GenerativeModel('gemini-3.8-flash')
+
+                    response_ai = local_model.generate_content(
+                        f"{system_instruction}\n\nالمستخدم يقول: {prompt}"
+                    )
+
+                    if response_ai.text:
+                        response = response_ai.text
+                    else:
+                        response = "لم أتمكن من معالجة النص، يرجى المحاولة مرة أخرى."
+                except Exception as e:
+                    response = f"عذراً، حدثت مشكلة أثناء الاتصال بالخادم. تفاصيل الخطأ: {e}"
+            else:
+                response = "⚠️ يرجى إدخال مفتاح الـ API في القائمة الجانبية لتفعيل المحادثة."
+
 
 # شريط جانبي (Sidebar) للموسيقى والتمارين
 with st.sidebar:
