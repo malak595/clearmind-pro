@@ -139,4 +139,83 @@ st.write(text["subtitle"])
 # ----------------- محتويات القائمة الجانبية المترجمة -----------------
 st.sidebar.markdown("---")
 st.sidebar.subheader(text["sidebar_control"])
+# قسم التمارين في القائمة الجانبية
+st.sidebar.markdown("---")
+st.sidebar.subheader(text["exercise_header"])
+exercise_type = st.sidebar.selectbox(text["exercise_select"], text["exercise_options"])
+if st.sidebar.button(text["exercise_btn"]):
+    st.sidebar.info(f"{text['exercise_success']}{exercise_type}")
+
+# ----------------- الأقسام الرئيسية (Tabs) -----------------
+tab1, tab2 = st.tabs(text["tabs"])
+
+# --- القسم الأول: حاسبة الاحتراق الأكاديمي ---
+with tab1:
+    st.header(text["burnout_title"])
+    st.write(text["burnout_subtitle"])
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        sleep_hours = st.slider(text["sleep_label"], 0, 24, 7)
+        study_hours = st.slider(text["study_label"], 0, 24, 6)
+    with col2:
+        leisure_time = st.slider(text["leisure_label"], 0, 24, 2)
+        stress_level = st.slider(text["stress_level"], 1, 10, 5)
+        
+    if st.button(text["calc_btn"]):
+        burnout_score = (stress_level * 10) + (study_hours * 5) - (sleep_hours * 3) - (leisure_time * 4)
+        burnout_score = max(0, min(100, burnout_score))
+        
+        st.subheader(f"{text['burnout_res']}{burnout_score}%")
+        if burnout_score < 40:
+            st.success(text["status_low"])
+        elif 40 <= burnout_score < 70:
+            st.warning(text["status_med"])
+        else:
+            st.error(text["status_high"])
+
+# --- القسم الثاني: الشات بوت متعدد اللغات ---
+with tab2:
+    st.header(text["chat_title"])
+    st.write(text["chat_subtitle"])
+
+    out_of_scope_keywords = ["هكر", "اختراق", "سياسة", "سلاح", "مخدرات", "hack", "piratage"]
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if prompt := st.chat_input(text["chat_input_placeholder"]):
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        if any(keyword in prompt.lower() for keyword in out_of_scope_keywords):
+            response = text["out_of_scope"]
+        else:
+            if API_KEY:
+                try:
+                    # تمرير مفتاح الـ API والاتصال المباشر بالموديل الحديث والمستقر
+                    genai.configure(api_key=API_KEY)
+                    chat_model = genai.GenerativeModel('gemini-3.8-flash')
+                    
+                    response_ai = chat_model.generate_content(
+                        f"{text['system_instruction']}\n\nUser text: {prompt}"
+                    )
+                    
+                    if response_ai.text:
+                        response = response_ai.text
+                    else:
+                        response = text["api_error"]
+                except Exception as e:
+                    response = f"{text['server_error']}{e}"
+            else:
+                response = text["api_warning"]
+
+        with st.chat_message("assistant"):
+            st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
 
